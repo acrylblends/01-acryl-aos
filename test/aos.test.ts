@@ -180,3 +180,10 @@ test('a just-opened app is waited for until its page shows; a running app whose 
     assert.equal(looks, 3)
   } finally { rmSync(home, { recursive: true, force: true }) }
 })
+
+test('an export argument reaches cmd.exe whole', async () => {
+  const { cmdQuoted } = await import('../plugins/aos/index.ts')
+  assert.equal(cmdQuoted('Notes, in a window'), '"Notes, in a window"')
+  assert.equal(cmdQuoted('C:\\Users\\a b\\out'), '"C:\\Users\\a b\\out"')
+  assert.equal(cmdQuoted('say "hi" & bye'), '"say hi & bye"')
+})

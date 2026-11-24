@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -8,7 +8,11 @@ import { foldEvent, viewOf } from '../plugins/aos/runs.ts'
 import { type AppInfo, type ComputerPorts, runTool, TOOL_NAMES } from '../plugins/aos/tools.ts'
 import { workflows } from '../plugins/aos/workflows.ts'
 
+/** The replay token a computer would keep in its home; any text in a test. */
+const REPLAY_TOKEN = 'test-replay-value'
+
 const scratch = join(fileURLToPath(new URL('..', import.meta.url)), '.acrylblends', 'test')
+mkdirSync(scratch, { recursive: true })
 
 /** The computer over a throwaway home and two listed apps; nothing runs, the door answers what it is asked. */
 function fakeComputer(home: string) {
@@ -103,7 +107,6 @@ test('save as workflow: a manual trigger, one HTTP step per tool posting it back
   const home = mkdtempSync(join(scratch, 'aos-wf-'))
   try {
     const folder = join(home, 'flow')
-    const { mkdirSync } = await import('node:fs')
     mkdirSync(join(folder, '.acryl'), { recursive: true })
     writeFileSync(join(folder, '.acryl', 'door.json'), JSON.stringify({ url: 'http://127.0.0.1:9' }))
     const sent: Array<{ url: string, body?: unknown }> = []
@@ -114,13 +117,13 @@ test('save as workflow: a manual trigger, one HTTP step per tool posting it back
     }) as typeof fetch
     const launcher = { state: () => ({ apps: [{ id: 'flow', blend: 'acrylblends.workflow-automation', path: folder, state: 'stopped' }] }), start: () => assert.fail('a running app is not started again') }
     const flows = workflows({ launcher: launcher as never, door: {} as never }, fakeFetch)
-    const saved = await flows.save('Group sales', [{ tool: 'desktop_folder_create', args: { name: 'Sales' } }, { tool: 'desktop_move', args: { items: ['crm'], to: 'Sales' } }], 'http://127.0.0.1:4517/app/api/aos/replay', 'secret')
+    const saved = await flows.save('Group sales', [{ tool: 'desktop_folder_create', args: { name: 'Sales' } }, { tool: 'desktop_move', args: { items: ['crm'], to: 'Sales' } }], 'http://127.0.0.1:4517/app/api/aos/replay', REPLAY_TOKEN)
     assert.deepEqual(saved, { id: 'wf_1', name: 'Group sales', steps: 2 })
     const paths = sent.map((s) => s.url.replace('http://127.0.0.1:9/app/automation/api', ''))
     assert.deepEqual(paths, ['/workflows', '/workflows', '/workflows/wf_1/trigger', '/workflows/wf_1/steps', '/workflows/wf_1/steps', '/workflows/wf_1/publish'])
     const step = (sent[3]?.body as { step: { integration: string, input: Record<string, unknown> } }).step
     assert.equal(step.integration, '@aiqadam/qadam-http')
-    assert.deepEqual([step.input.url, step.input.authType, step.input.authFields, step.input.body], ['http://127.0.0.1:4517/app/api/aos/replay', 'BEARER_TOKEN', { token: 'secret' }, { data: { tool: 'desktop_folder_create', args: { name: 'Sales' } } }])
+    assert.deepEqual([step.input.url, step.input.authType, step.input.authFields, step.input.body], ['http://127.0.0.1:4517/app/api/aos/replay', 'BEARER_TOKEN', { token: REPLAY_TOKEN }, { data: { tool: 'desktop_folder_create', args: { name: 'Sales' } } }])
     assert.deepEqual(await flows.run('wf_1'), { run: 'run_1', status: 'succeeded' })
   } finally { rmSync(home, { recursive: true, force: true }) }
 })

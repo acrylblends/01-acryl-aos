@@ -65,6 +65,7 @@ function render() {
     + S.desktop.dock.filter(kindOf).map(dockBtn).join('') + (extra.length ? `<span class="sep"></span>${extra.map(dockBtn).join('')}` : '')
   $('#mApps').textContent = S.apps.length
   $('#mRun').textContent = S.meter.running ?? 0
+  $('#mSleep').textContent = S.apps.filter((a) => a.state === 'asleep').length
   $('#mTools').textContent = S.meter.toolCalls ?? 0
   $('#mReplay').textContent = S.meter.replays ?? 0
   $('#mTok').textContent = (S.meter.modelTokens ?? 0).toLocaleString('en')

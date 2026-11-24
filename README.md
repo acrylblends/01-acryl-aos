@@ -1,5 +1,26 @@
-# aos
+# ACRYL AOS
 
+**ACRYL AOS** is an agentic operating system for your ACRYL apps, as a Blend (registry id `acryl.aos`, category System > Agentic operating systems).
+
+- A desktop with your apps' icons, folders that group apps and files, a dock, menus (File, View, Go) and Settings (wallpaper, icon size, dock side, chat shown).
+- Each app opens in its own window with its own host (the ACRYL launcher's `start`), and can be stopped from its menu.
+- One chat drives every app: the frame's chat calls this computer's tools (`desktop_*`, `system_*`) and each running app's own tools through its door (`app_look`, `app_act`, `app_tools`, `app_call`).
+- **Last run** shows a chat turn's tool steps (0 tokens) apart from its model steps (the provider's token usage).
+- **Save as workflow** turns a run's tool steps into a workflow in the Workflow Automation Blend; **Run again** replays it with no model call.
+- Per app: Add to Applications and Export as installer (`acrylblends pack`).
+
+The desktop is one file, `~/.acryl/desktop.json`. The app list is the ACRYL launcher's (`~/.acryl/control-center-apps.json`).
+
+## Start
+
+```sh
+npm create acrylblends@latest my-aos -- --from acryl.aos
+cd my-aos && npm install && npm run dev
+```
+
+The chat needs a model key in the environment (for example `DEEPSEEK_API_KEY`).
+
+## Develop
 A Cordis app on Node, scaffolded by `acrylblends init`. TypeScript, run by Node with no build step. Every part is a
 Cordis plugin.
 

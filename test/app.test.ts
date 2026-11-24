@@ -18,6 +18,8 @@ const projectRoot = fileURLToPath(new URL('..', import.meta.url))
 /** Boot the app in a throwaway home on any free port, run the test, always stop it and remove the home. */
 async function withApp(run: (app: App) => Promise<void>, options: AppOptions = {}) {
   const home = await mkdtemp(join(scratch, 'app-test-'))
+  // ACRYL AOS reads the app list and keeps its desktop in ACRYL's home: a test's own, never the person's ~/.acryl.
+  process.env.ACRYL_LAUNCHER_HOME = join(home, 'acryl-home')
   const app = await createApp(withPort(pinnedInstance(home, { root: projectRoot }), 0), {
     ...options,
     listen: false,
@@ -43,9 +45,14 @@ test('serves the index route: the first screen to a browser, the JSON hello to a
     assert.equal(page.status, 200)
     assert.match(page.headers.get('content-type') ?? '', /text\/html/)
     const html = await page.text()
-    // The ACRYL frame's first tile asks for a page: the root must never hand it JSON (Chrome's viewer is nearly invisible in the dark frame).
-    assert.ok(html.includes(`<h1>${appName}</h1>`), 'the page names the app')
-    assert.ok(html.includes('href="./about"'), 'the page links to About relatively')
+    // The ACRYL frame's first tile asks for a page: the root must never hand it JSON (Chrome's viewer is nearly invisible in the dark frame). It is ACRYL AOS,
+    // its links relative to where the app is mounted (the root here).
+    assert.ok(html.includes('<title>ACRYL AOS</title>'), 'the first screen is AOS')
+    assert.ok(html.includes('<base href="/">') && html.includes('src="api/aos/page.js"'), 'its script is found under the mount')
+    // The template's own first screen is kept at /home.
+    const own = await (await app.root.router.request(`/home`, { headers: { accept: 'text/html' } })).text()
+    assert.ok(own.includes(`<h1>${appName}</h1>`), 'the template page names the app')
+    assert.ok(own.includes('href="./about"'), 'the page links to About relatively')
   }))
 
 test('renders a .tsx page, and an error in it names the .tsx line', () =>
@@ -101,7 +108,7 @@ test('the frame mounts the same app under /app; the app on its own server keeps 
 test('a plugin puts its widget on the first screen, and the widget leaves with the plugin', () =>
   withApp(async (app) => {
     const page = async () =>
-      (await app.root.router.request('/', { headers: { accept: 'text/html' } })).text()
+      (await app.root.router.request('/home', { headers: { accept: 'text/html' } })).text()
     const feature = app.root.plugin({
       name: 'hello-widget',
       inject: ['home'],

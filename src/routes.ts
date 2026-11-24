@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import type { Context } from '@deepseek-ai/cordis'
 import { type Home, renderWidgets } from '../plugins/home/index.ts'
 import { Acryl } from '../plugins/router/src/index.ts'
@@ -50,11 +51,17 @@ const homePage = (name: string, widgets: string): string => `<!doctype html>
  * The app's own pages and routes, mountable at any prefix: the standalone server mounts it at the root, the frame host at {@link FRAME_MOUNT_PREFIX}.
  * The first screen shows the widgets of the app's plugins (`ctx.home`), read at each request, so a plugin switched on or off shows at the next load.
  */
-export function makeApp(home: Home, name: () => string = () => APP_NAME): Acryl {
+export function makeApp(home: Home, name: () => string = () => APP_NAME, prefix = ''): Acryl {
   return (
     new Acryl()
-      // A browser gets the first screen; an API client gets the JSON hello.
+      // ACRYL AOS is the first screen: the desktop (plugins/aos/page), its links relative to where the app is mounted.
       .get('/', async (c) =>
+        (c.req.header('accept') ?? '').includes('text/html')
+          ? c.html(readFileSync(new URL('../plugins/aos/page/index.html', import.meta.url), 'utf8').replace('__BASE__', `${prefix}/`))
+          : c.json({ app: name(), ok: true }),
+      )
+      // The template's own first screen, kept at /home.
+      .get('/home', async (c) =>
         (c.req.header('accept') ?? '').includes('text/html')
           ? c.html(homePage(name(), await renderWidgets(home)))
           : c.json({ app: name(), ok: true }),
@@ -73,7 +80,7 @@ export const routes = {
     // The name the app has now (Settings > App renames it), else the one the scaffold was made with.
     ctx.router.route(
       prefix === '' ? '/' : prefix,
-      makeApp(ctx.home, () => ctx.get('appInstance')?.name ?? APP_NAME),
+      makeApp(ctx.home, () => ctx.get('appInstance')?.name ?? APP_NAME, prefix),
     )
   },
 }

@@ -3,10 +3,13 @@
 apiVersion: blends.acryl.dev/v1alpha1
 kind: Blueprint
 metadata:
-  id: acrylblends.aos
-  name: aos
+  id: acryl.aos
+  name: "ACRYL AOS"
   version: 0.1.0
-  visibility: private # `npm run save` never pushes a private app to a public remote
+  category: system
+  description: "ACRYL AOS, an agentic operating system for your ACRYL apps: a desktop with app icons, folders and files, a dock, menus and Settings; each app opens in its own window; one chat drives every app with its tools, and a run saved as a workflow repeats with no model."
+  license: MIT
+  visibility: public
 spec:
   runtime: cordis
   parameters:
@@ -28,6 +31,10 @@ spec:
     # Sharing: `npm run acryl -- plugin pull github:<owner>/<repo>@<version>` installs a plugin someone released (development only).
     - id: plugin-share
       name: plugin-share
+    # ACRYL AOS: the desktop of this computer's ACRYL apps (spec 052 D11-D14). The arrangement in ~/.acryl/desktop.json, the apps from the Control
+    # Center's list, each opened in its own window; the computer's tools (desktop_*, system_*, app_*) in the tools registry the chat reads.
+    - id: aos
+      name: aos
     - id: server
       name: acryl-node-server
       config:
